@@ -1,0 +1,36 @@
+<!--
+A COMMENT MUST BE HERE
+  L a O not fixed yet....
+-->
+<xmlconfig>
+ <experiment date="20150606" reaction="mg26_3Hed"> </experiment> 
+ <dir location="/home/ojr/08_DATA_ROOT/20150606_3he26mg_root"> </dir>
+ <telescopes>
+    <t1>
+    <V addwith="0.0" dechan="17" echan="1">      </V>
+  </t1>
+  <t2>
+    <V addwith="1.0" dechan="18" echan="2">      </V>
+  </t2>
+  <t3>
+    <V addwith="0.97" dechan="19" echan="3">      </V>
+  </t3>
+  <t4>
+    <V addwith="1.1" dechan="20" echan="4">      </V>
+  </t4>
+  <t5>
+    <V addwith="1.5" dechan="21" echan="5">      </V>
+  </t5>
+  <t6>
+    <V addwith="1.03" dechan="22" echan="6">      </V>
+  </t6>
+  <t7>
+    <V addwith="0.0" dechan="23" echan="7">      </V>
+  </t7>
+  <t8>
+    <V addwith="2.4" dechan="24" echan="8">      </V>
+  </t8>
+  
+ </telescopes>
+
+</xmlconfig>
