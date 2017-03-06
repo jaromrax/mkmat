@@ -1,11 +1,10 @@
 #include <unistd.h>  //sleep 
 /*
  *    a   THIS WILL CREATE  MATRIX FROM A TELESCOPE
- *    
  *  .L mkmat.C 
  *  loadcuts()  
  *  batchmat( 47, 2 )
- *
+    mkmat_openrun()
  *  mkmat1( 
  *  mkmat1(-1,"V","e<10") 
  *  mkmat1(-1,"V","") 
@@ -64,6 +63,13 @@ TXMLEngine* xml;
 XMLNodePointer_t mainnode ;
 XMLDocPointer_t xmldoc;
 
+
+void xmlreadfile_fini()
+{
+   // Release memory before exit
+   xml->FreeDoc(xmldoc);
+   delete xml;
+}//xmlreadfile_init
 
 void xmlreadfile_init(const char* filename = "example.xml")
 {
@@ -148,12 +154,6 @@ int mkmat_openrun(int run=10){
    DisplayTele(xml, mainnode, 0, "telescopes" );
    printf("GO ON with %d\n",  atoi(output) ); 
 */
-void xmlreadfile_fini()
-{
-   // Release memory before exit
-   xml->FreeDoc(xmldoc);
-   delete xml;
-}//xmlreadfile_init
 
 
 
@@ -366,8 +366,6 @@ bool FileExists(string strFilename, int minsize) {
  *
  *
  **********************************************************************************/
-
-
 /*
  *
  *  MAIN  LINE
@@ -384,12 +382,10 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
   int reverse=0;
   int tele=teleIN;
 
-
   //NOREV  if (tele<0){ printf("1D PLOTTING IN REVERSE (dE + 1/f*E)\n",""); reverse=1; tele=-1*tele;}
 
-   printf(" making matrix for telescope T%d%s, #%d, 5000/bins :%d cut@%d %dDIM\n", 
-	 tele,VOL, count, bins, (int)cut, dimen );
-
+   printf(" making matrix for telescope T%d%s, #%d, 5000/bins :%d  %dDIM\n", 
+	 tele,VOL, count, bins,  dimen );
 
   /*
    * ONCE THIS COEF is set,  you cannot change again because of !cuts!
@@ -406,7 +402,7 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
   char cmdcond[500];
   char sde[10];
   char se[10];
-  char telename[10];  // T1
+  //  char telename[10];  // T1
   char spename[10];  // T1V  or  T1V1D
   char randomization[50];// rand()
 
@@ -437,7 +433,6 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
   // ----------------------------------------------------LEC--------------------
 
   
-
   if (  FileExists("mkmat.xml",33) ){  //minimum size 
     
     xmlreadfile_init("mkmat.xml");
@@ -452,16 +447,46 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
   
   if (coefover>0.0){ coef[tele-1]=coefover;printf("ceoficient override\n\n%s","");}
 
-  sprintf( sde,"%s%03d",    VOL, de[tele-1] );
-  sprintf(  se,"%s%03d",    VOL, e[tele-1] );
-  sprintf(  telename,"T%d%s",  tele,  VOL );// T1V
-  sprintf(  spename,"T%d%s",  tele,  VOL );//  (T1V or T1V1D)SPECTRUM NAME (redefine later if 1D)
+  sprintf(  sde,"%s%03d",    VOL, de[tele-1] );
+  sprintf(  se,"%s%03d",     VOL, e[tele-1] );
 
+
+
+
+  printf("i ... %s\n","preparing spename");
+  if (dimen==2){  //2D........... M1 ..M8   t2V  t2V1D
+   sprintf(  spename,"M%d",  tele );//  M2 M3  (T1V or T1V1D)SPECTRUM NAME
+   //  sprintf(  spename,"T%d%s",  tele,  VOL );//  (T1V or T1V1D)SPECTRUM NAME
+  }//........2D
+  if (dimen==1){  //1D ......... t1 ... t2_d  t3_p  t4_diag
+   //   sprintf(  spename,"t%d",  tele );
+   if (cut!=NULL){
+     // i expect  ct2_d ct3_p ct4_t ct5_diag
+     TString scutname=cut->GetName();
+     TObjArray *o=scutname.Tokenize("_");
+     TString part=((TObjString*)o->At(1))->GetString();
+     sprintf(  spename,"t%d_%s",  tele ,  part.Data()   );
+     printf("i ... spename /%s/ particle=%s\n" , spename,  part.Data()   );
+     //     sprintf( cmdcond,"%s>0 && %s",   sde , cut->GetName()   );// USE CUT
+     // HERE I WANT TO HAVE MIDDLE LINE
+   }else{
+     if ( (strlen(CONDITION)>1) && (strstr(CONDITION,"E<1")!=NULL)  ){
+       sprintf(  spename,"t%d_diag",  tele );
+     }else{
+       sprintf(  spename,"t%d_1d",  tele );
+     }
+   }
+  }//.......1D
+
+
+
+
+  
+  
   // if I do V017+0.5-rand(0,1) => spe is shifted!
   //         V017+rand(0,1)     =>  is correct...
   //  sprintf(randomization,"+0.5-1e-3*(rand()%%1e3)","" );//  0.456*(  V001 R )
   sprintf(randomization,"+1e-3*(rand()%%1e3)","" );//  0.456*(  V001 R)  R="" or "+x"
-
 
   //COMMAND  - 1D   or  2D ..................
   char option[20]=""; //"col" for bidim
@@ -470,14 +495,12 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
 //NOREV  sprintf( cmd,  "%s:%s+%s*%.4f>>%s( %d,0,%d,   %d,0, %d )",
 //NOREV sde,se,sde,coef[tele-1],spename,BINS/bins,BINS,BINS/bins,BINS);
   sprintf( cmd,    "%s:%s+%s*%.4f>>%s( %d,0,%d,   %d,0, %d )",
-   sde,sde,se, coef[tele-1],spename,BINS/bins,BINS,BINS/bins,BINS);
+      sde,sde,se, coef[tele-1],  spename,  BINS/bins,BINS,BINS/bins,BINS);
   sprintf( option,"%s","col" );
   }//dim==2
 
 
   if (dimen==1){
-  sprintf(  spename,"T%d%s1D",  tele,  VOL );//  SPECTRUM NAME REDEFINE
-  //
   // with rand: 25sec
   // wo   rand: 24sec
   //  sprintf( cmd,    "%s+(%s)*%.4f>>%s( 5000,0,5000 )",   // SIMPLE BUT WITH SPIKES
@@ -490,11 +513,11 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
   //NOREV  sprintf( cmd,    "%s+(%s %s)*%.4f>>%s( %d,0,%d )",
   //NOREV de,sde, randomization,  coef[tele-1],  spename,BINS,BINS);
 
-    sprintf( cmdXAX,    "%s+(%s %s)*%.4f  ",
-   sde,se, randomization, coef[tele-1]  );
+  sprintf( cmdXAX,    "%s+(%s %s)*%.4f  ",
+            sde,se, randomization, coef[tele-1]  );
   
   sprintf( cmd,    "%s+(%s %s)*%.4f>>%s( %d,0,%d )",
-   sde,se, randomization, coef[tele-1],  spename, BINS, BINS  );
+           sde,se, randomization, coef[tele-1],  spename, BINS, BINS  );
   //  }
   /*   reverse
    *   dE  +  factor *E   ???  10000 bins! ==>> consistent with dE...
@@ -529,7 +552,7 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
 
     cono.ReplaceAll("time", "timx" );
     cono.ReplaceAll("e+", "r+" );
-     cono.ReplaceAll("e", se );
+    cono.ReplaceAll("e", se );
     cono.ReplaceAll("r+", "e+" );
     cono.ReplaceAll("timx", "time" );
 
@@ -539,7 +562,7 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
     cono.ReplaceAll("sum", cmdXAX );
     cono.ReplaceAll("SUM", cmdXAX );
  
-    sprintf( cmdcond,"%s && %s",  cmdcond, cono.Data()  );     //  at least dE >0 !!!!!1
+    sprintf( cmdcond,"%s && %s",  cmdcond, cono.Data()  ); //at least dE >0 !!!!!1
   } // if condition:  reinterpret it
 
 
@@ -557,9 +580,11 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
   //  gDirectory->ls();
   printf("searching <%s>\n", spename );
   TH1* h2;
-  //  TH2F* h2=(TH2F*)gDirectory->Get( telename );
-  //  sleep(1);
+
+  //  TH2F* h2=(TH2F*)gDirectory->Get( telename ); //  sleep(1);
+  
   h2=(TH1*)gDirectory->FindObject( spename ); 
+
   //  if ( dimen==2){  h2=(TH1*)gDirectory->FindObject( telename );  }
   //  if ( dimen==1){  h2=(TH1*)gDirectory->FindObject( telename );  }
 
@@ -571,39 +596,40 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
 
   //"nanot->Draw(\"V022:V006+V022*0.535>>h6a(200,2500,2700,200,750,950)\",\"V022>0\",\"col\" )
   //goff  gPad->Modified();  gPad->Update();
-}//mkmat
+}//mkmat ============================================MKMAT END===========
 
 
 
 
-/*
+
+/* ***************************** GCUT
  *      1D  spectrum  based on cut
  */
-void mkmat1(int tele=-1,  const char* VOL="V" ,TCutG *cut=NULL, int count=-1, int bins=4, double coefover=-0.1 ){
+void mkmat1(int tele=-1,  TCutG *cut=NULL, int count=-1, int bins=4, double coefover=-0.1 ){
+  char VOL[10]="V";
   int dimension=1;
   mkmat(tele, count, bins, cut, dimension , VOL ,"", coefover );  // DIM ==1
-  //TH1F  *h=new TH1F();
 }// WITH CUT - 1DIM
 
-/*
+/********************************** TEXT
  *      1D  spectrum  based on TEXT COND
  */
-void mkmat1(int tele=-1, const char* VOL="V" , const char* COND="", int count=-1, int bins=4, double coefover=-0.1 ){
+void mkmat1(int tele=-1,  const char* COND="", int count=-1, int bins=4, double coefover=-0.1 ){
+  char VOL[10]="V";
   int dimension=1;
   mkmat(tele, count, bins, NULL, dimension , VOL, COND, coefover   );  // DIM ==1
 }// WITH TEXT COND - 1DIM
 
 
-
 /*
  *      2D  spectrum,  no cut,     6,"V"
  */
-void mkmat(int tele=-1,  const char* VOL ){
+/*void mkmat(int tele=-1,  const char* VOL="V" ){
   int dimension=2;
   int bins=4;
   mkmat(tele, -1, bins, NULL, dimension , VOL );  // DIM ==1
 }// WITH CUT - 1DIM
-
+*/
 
 
 
@@ -655,15 +681,14 @@ void batchmat(int run,  int  det=6, const char* VOL="V" ){
   sprintf( fnamespe, "T%d%sspectra.root", det, VOL );       //filename
 
   // these names must correspond to mkmat    T2V  T2V1D
-  sprintf( telename, "T%d%s", det, VOL );       //telename
-  sprintf( telename1D, "T%d%s1D", det, VOL );      //telename 1D
-  sprintf( telenamed, "T%d_d_run%03d_%s", det, run, VOL);       //telename d
-  sprintf( telenamep, "T%d_p_run%03d_%s", det, run, VOL );       //telename p
-  sprintf( telenamede, "T%d_de_run%03d_%s", det, run, VOL );       //telename de
+  sprintf( telename,  "T%d%s", det, VOL );                    //telename
+  sprintf( telename1D,"T%d%s1D", det, VOL );                  //telename 1D
+  sprintf( telenamed, "T%d_d_run%03d_%s", det, run, VOL);     //telename d
+  sprintf( telenamep, "T%d_p_run%03d_%s", det, run, VOL );    //telename p
+  sprintf( telenamede,"T%d_de_run%03d_%s", det, run, VOL );   //telename de
 
   sprintf( cutdname, "cutt%dd%s", det, VOL );       //cutname d 
   sprintf( cutpname, "cutt%dp%s", det, VOL );       //cutname p
-
 
 
   /*
@@ -680,7 +705,7 @@ void batchmat(int run,  int  det=6, const char* VOL="V" ){
   /*
    *    CREATE  MATRIX   (and  d  and p spectra as well?)
    */
-  mkmat( det, VOL  );
+  mkmat( det   );
   TH2F* t6bi=(TH2F*)gDirectory->Get(  telename  );
 
    /*
@@ -697,19 +722,19 @@ void batchmat(int run,  int  det=6, const char* VOL="V" ){
    *  if there are cuts  ==>>  create 1D
    */
   if (mycutd!=NULL){
-    mkmat1( det, VOL, mycutd ); // create 1D
+    mkmat1( det,  mycutd ); // create 1D
     t61d_d=(TH1F*)gDirectory->Get(  telename1D  );
     t61d_d->SetName( telenamed );
   }//cutd
   if (mycutp!=NULL){
-    mkmat1( det,  VOL, mycutp ); // create 1D
+    mkmat1( det,   mycutp ); // create 1D
     t61d_p=(TH1F*)gDirectory->Get(  telename1D  );
     t61d_p->SetName( telenamep );
   }//cutd
   // Run with a condition:
   // MAKE 1D   dE  ONLY SPECTRUM
 
-  mkmat1( -det , VOL, "e<10" );  // and now see....  only dE plotted; reverse
+  mkmat1( -det ,  "e<10" );  // and now see....  only dE plotted; reverse
   t61d_de=(TH1F*)gDirectory->Get(  telename1D  );
   t61d_de->SetName( telenamede );
 
