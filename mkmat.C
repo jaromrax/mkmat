@@ -1,22 +1,22 @@
-#include <unistd.h>  //sleep 
+#include <unistd.h>  //sleep
 /*
  *    a   THIS WILL CREATE  MATRIX FROM A TELESCOPE
- *    
- *  .L mkmat.C 
- *  loadcuts()  
+ *
+ *  .L mkmat.C
+ *  loadcuts()
  *  batchmat( 47, 2 )
  *
- *  mkmat1( 
- *  mkmat1(-1,"V","e<10") 
- *  mkmat1(-1,"V","") 
+ *  mkmat1(
+ *  mkmat1(-1,"V","e<10")
+ *  mkmat1(-1,"V","")
  */
 /*
  *
  * PROBLEM BINNING:
- *  
  *
-mkmat1(1, "V",  "V001<10")              
-is an example (bad btw  as  v017*0.4950 is drq) of spikes 
+ *
+mkmat1(1, "V",  "V001<10")
+is an example (bad btw  as  v017*0.4950 is drq) of spikes
  *
  *
  */
@@ -45,7 +45,7 @@ int BINS=6000;
 // string
 #include <stdio.h>
 // FileExists:
-#include <sys/stat.h> 
+#include <sys/stat.h>
 //
 #include "TTree.h"
 #include "TH1.h"
@@ -54,7 +54,7 @@ int BINS=6000;
 
 void DisplayTele(TXMLEngine* xml, XMLNodePointer_t node, Int_t level, const char* search );
 /*
- * DRIVING ALL THE XML 
+ * DRIVING ALL THE XML
  */
 std::string addr[4]={"telescopes", "t1", "V" , "addwith" };
 int leveloffset=-1;
@@ -65,47 +65,56 @@ XMLNodePointer_t mainnode ;
 XMLDocPointer_t xmldoc;
 
 
+void xmlreadfile_fini()
+{
+   // Release memory before exit
+   xml->FreeDoc(xmldoc);
+   delete xml;
+}//xmlreadfile_init
+
+
+
 void xmlreadfile_init(const char* filename = "example.xml")
 {
    xml = new TXMLEngine;
    xmldoc = xml->ParseFile(filename);
    if (xmldoc==0) {
-      delete xml;      return;  
+      delete xml;      return;
    }
-   // take access to main node   
+   // take access to main node
     mainnode = xml->DocGetRootElement(xmldoc);
 }//xmlreadfile_init
 
 double xmlread_addwith(int tele, const char* VOL){
   char tmpdet[20];// t1....
     //  V, addwith
-    addr[2]= VOL;  addr[3]= "addwith" ; 
+    addr[2]= VOL;  addr[3]= "addwith" ;
     leveloffset=-1; sprintf( tmpdet, "t%d", tele );
     addr[1]=tmpdet;
    DisplayTele(xml, mainnode, 0, "telescopes" );
-   //   printf("GO ON with %f\n",  atof(output) ); 
+   //   printf("GO ON with %f\n",  atof(output) );
    return  atof(output);
 }
 
 int xmlread_dechan(int tele, const char* VOL){
   char tmpdet[20];// t1....
     //  V, addwith
-    addr[2]= VOL;  addr[3]= "dechan" ; 
+    addr[2]= VOL;  addr[3]= "dechan" ;
     leveloffset=-1; sprintf( tmpdet, "t%d", tele );
     addr[1]=tmpdet;
    DisplayTele(xml, mainnode, 0, "telescopes" );
-   //   printf("GO ON with %f\n",  atof(output) ); 
+   //   printf("GO ON with %f\n",  atof(output) );
    return  atoi(output);
 }
 
 int xmlread_echan(int tele, const char* VOL){
   char tmpdet[20];// t1....
     //  V, addwith
-    addr[2]= VOL;  addr[3]= "echan" ; 
+    addr[2]= VOL;  addr[3]= "echan" ;
     leveloffset=-1; sprintf( tmpdet, "t%d", tele );
     addr[1]=tmpdet;
    DisplayTele(xml, mainnode, 0, "telescopes" );
-   //   printf("GO ON with %f\n",  atof(output) ); 
+   //   printf("GO ON with %f\n",  atof(output) );
    return  atoi(output);
 }
 
@@ -114,7 +123,7 @@ int mkmat_openrun(int run=10){
   char file[500];// t1....
     //  V, addwith
   //   0=telescopes;  1=t1  2=V
-    addr[2]= "";  addr[3]= "" ; 
+    addr[2]= "";  addr[3]= "" ;
     leveloffset=-1;
     //sprintf( tmpdet, "t%d", tele );
     addr[1]="location";
@@ -139,27 +148,20 @@ int mkmat_openrun(int run=10){
 /*
    //
    //  DEFINE  (PATH and)    ATTRIBUTE
-   //   
-   leveloffset=-1;addr[3]= "addwith" ; 
+   //
+   leveloffset=-1;addr[3]= "addwith" ;
    DisplayTele(xml, mainnode, 0, "telescopes" );
-   printf("GO ON with %f\n",  atof(output) ); 
+   printf("GO ON with %f\n",  atof(output) );
 
    leveloffset=-1;  addr[3]= "dechan" ;
    DisplayTele(xml, mainnode, 0, "telescopes" );
-   printf("GO ON with %d\n",  atoi(output) ); 
+   printf("GO ON with %d\n",  atoi(output) );
 */
-void xmlreadfile_fini()
+
+
+void DisplayTele(TXMLEngine* xml, XMLNodePointer_t node, Int_t level, const char* search )
 {
-   // Release memory before exit
-   xml->FreeDoc(xmldoc);
-   delete xml;
-}//xmlreadfile_init
 
-
-
-void DisplayTele(TXMLEngine* xml, XMLNodePointer_t node, Int_t level, const char* search ) 
-{
- 
   TString tel;
   TString sat;
 
@@ -172,10 +174,10 @@ void DisplayTele(TXMLEngine* xml, XMLNodePointer_t node, Int_t level, const char
       leveloffset=level;  sprintf( output, "%s", "" );
       //       printf("Found level offset.... ==%d\n", leveloffset );
     }else{//neni to on, hledej
-       // display all child nodes   
+       // display all child nodes
       XMLNodePointer_t child = xml->GetChild(node);
       while (child!=0) {
-	DisplayTele(xml, child, level+1, search ); 
+	DisplayTele(xml, child, level+1, search );
          child = xml->GetNext(child);
       }//while
     }
@@ -187,7 +189,7 @@ void DisplayTele(TXMLEngine* xml, XMLNodePointer_t node, Int_t level, const char
     if ( tel.CompareTo( search  )==0){
       //      printf( "i ... %d %d ... addr[%d]\n", level, leveloffset,level-leveloffset  );
       //         printf("%*c<%s>\n",level+1,' ', addr[ level- leveloffset ].c_str()   );
-      // display all child nodes   
+      // display all child nodes
       if (getattrlevel<=level){
 	//	  printf("reached attr  level .... ==%d\n", level );
 
@@ -201,18 +203,18 @@ void DisplayTele(TXMLEngine* xml, XMLNodePointer_t node, Int_t level, const char
 	    //	    printf("%*c  attr <%s = %s>\n",level+1,' ',   sat.Data() ,  output  );
 	  }// attr OK
 	  // printf("%*c attr: %s value: %s\n",level+1,' ', xml->GetAttrName(attr), xml->GetAttrValue(attr));
-	  attr = xml->GetNextAttr(attr);  
+	  attr = xml->GetNextAttr(attr);
 	}//display attributes
-     }else{ 
+     }else{
       XMLNodePointer_t child = xml->GetChild(node);
       while (child!=0) {
 	//printf("searching %s\n", addr[level- leveloffset +1].c_str()  );
-	DisplayTele(xml, child, level+1, addr[level- leveloffset +1].c_str() ); 
+	DisplayTele(xml, child, level+1, addr[level- leveloffset +1].c_str() );
          child = xml->GetNext(child);
       }//reached attrlevel
-      }//else attrlevel  
+      }//else attrlevel
     }//compare OK
-    
+
   } // leveloffset >=0
   return;
 }//DisplayTele------------------------------------------
@@ -241,7 +243,7 @@ void savecut(TCutG *cut, const char* name){
   TDirectory *dir=gDirectory;
   TCutG *newcut=(TCutG*)cut->Clone( name ); // better to clone before (other dir...)
   TFile *nf=new TFile("cuts.root", "UPDATE");
-  newcut->Write();                         
+  newcut->Write();
   nf->ls();
   nf->Close();
   dir->cd();
@@ -284,7 +286,7 @@ void loadcuts(){
 
 void rmcut(const char* name, int version=0){
   if (version==0){
-    printf("make a backup and use the version number  ;1 ;2\n","");
+    printf("make a backup and use the version number  ;1 ;2\n%s","");
     return;
   }
     TFile *nf=new TFile("cuts.root", "UPDATE");
@@ -326,33 +328,33 @@ void cpcut(const char* name, const char* newname){
 
 
 
-bool FileExists(string strFilename, int minsize) { 
-  struct stat stFileInfo; 
-  bool blnReturn; 
-  int intStat; 
+bool FileExists(string strFilename, int minsize) {
+  struct stat stFileInfo;
+  bool blnReturn;
+  int intStat;
 
-  // Attempt to get the file attributes 
-  intStat = stat(strFilename.c_str(),&stFileInfo); 
-  if(intStat == 0) { 
-    // We were able to get the file attributes 
-    // so the file obviously exists. 
-    printf( "SIZE==%d\n", stFileInfo.st_size ); 
+  // Attempt to get the file attributes
+  intStat = stat(strFilename.c_str(),&stFileInfo);
+  if(intStat == 0) {
+    // We were able to get the file attributes
+    // so the file obviously exists.
+    printf( "SIZE==%ld\n", stFileInfo.st_size );
     if (stFileInfo.st_size<minsize){ blnReturn = false;
     }else{
-    blnReturn = true; 
+    blnReturn = true;
     }
-  } else { 
-    // We were not able to get the file attributes. 
-    // This may mean that we don't have permission to 
-    // access the folder which contains this file. If you 
-    // need to do that level of checking, lookup the 
-    // return values of stat which will give you 
-    // more details on why stat failed. 
-    printf( "Not exist ....size==%d\n", stFileInfo.st_size ); 
-    blnReturn = false; 
-  } 
-   
-  return(blnReturn); 
+  } else {
+    // We were not able to get the file attributes.
+    // This may mean that we don't have permission to
+    // access the folder which contains this file. If you
+    // need to do that level of checking, lookup the
+    // return values of stat which will give you
+    // more details on why stat failed.
+    printf( "Not exist ....size==%ld\n", stFileInfo.st_size );
+    blnReturn = false;
+  }
+
+  return(blnReturn);
 }
 
 
@@ -378,7 +380,7 @@ bool FileExists(string strFilename, int minsize) {
  *
 #  NOREV 2015 01 13 ... no reverse.... akorat problemy
  */
-void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 , 
+void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
 	   const char* VOL="V", const char* CONDITION="" ,double coefover=-0.1 ){
 
   int reverse=0;
@@ -387,8 +389,8 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
 
   //NOREV  if (tele<0){ printf("1D PLOTTING IN REVERSE (dE + 1/f*E)\n",""); reverse=1; tele=-1*tele;}
 
-   printf(" making matrix for telescope T%d%s, #%d, 5000/bins :%d cut@%d %dDIM\n", 
-	 tele,VOL, count, bins, (int)cut, dimen );
+   printf(" making matrix for telescope T%d%s, #%d, 5000/bins :%d cut@%ld %dDIM\n",
+	  tele,VOL, count, bins, (long)cut, dimen );
 
 
   /*
@@ -433,13 +435,13 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
   //  sprintf( sde,"O%03d", de[tele-1] );
   //  sprintf(  se,"O%03d",  e[tele-1] );
   //  sprintf(  telename,"T%dO",  tele );
-  }//O 
+  }//O
   // ----------------------------------------------------LEC--------------------
 
-  
 
-  if (  FileExists("mkmat.xml",33) ){  //minimum size 
-    
+
+  if (  FileExists("mkmat.xml",33) ){  //minimum size
+
     xmlreadfile_init("mkmat.xml");
 
     for (int i=1;i<=8;i++){
@@ -449,7 +451,7 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
     }
     xmlreadfile_fini();
   }//  XML FILE EXISTS------------------------------
-  
+
   if (coefover>0.0){ coef[tele-1]=coefover;printf("ceoficient override\n\n%s","");}
 
   sprintf( sde,"%s%03d",    VOL, de[tele-1] );
@@ -460,7 +462,7 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
   // if I do V017+0.5-rand(0,1) => spe is shifted!
   //         V017+rand(0,1)     =>  is correct...
   //  sprintf(randomization,"+0.5-1e-3*(rand()%%1e3)","" );//  0.456*(  V001 R )
-  sprintf(randomization,"+1e-3*(rand()%%1e3)","" );//  0.456*(  V001 R)  R="" or "+x"
+  sprintf(randomization,"+1e-3*(rand()%%1e3)%s","" );//  0.456*(  V001 R)  R="" or "+x"
 
 
   //COMMAND  - 1D   or  2D ..................
@@ -492,7 +494,7 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
 
     sprintf( cmdXAX,    "%s+(%s %s)*%.4f  ",
    sde,se, randomization, coef[tele-1]  );
-  
+
   sprintf( cmd,    "%s+(%s %s)*%.4f>>%s( %d,0,%d )",
    sde,se, randomization, coef[tele-1],  spename, BINS, BINS  );
   //  }
@@ -516,7 +518,7 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
   }else{
     sprintf( cmdcond,"%s>0",   sde );     //  at least dE >0 !!!!!1
   }
- 
+
   //problem....         V001 V002.........
   // I solve it by replacing     de->  V001
   //                             e->   V017
@@ -538,7 +540,7 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
 
     cono.ReplaceAll("sum", cmdXAX );
     cono.ReplaceAll("SUM", cmdXAX );
- 
+
     sprintf( cmdcond,"%s && %s",  cmdcond, cono.Data()  );     //  at least dE >0 !!!!!1
   } // if condition:  reinterpret it
 
@@ -548,7 +550,7 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
 
   printf("\"%s\"  , \"%s\" ,  \"%s\"   \n", cmd, cmdcond,  option );
 
-  
+
   if (count>0){   nanot->Draw(cmd, cmdcond,  option  , count );}
   if (count<=0){  nanot->Draw(cmd, cmdcond,  option          );}
   // ja bych tu chtel pridat graf - osax=k2(E)  osay=k1(dE)
@@ -559,7 +561,7 @@ void mkmat(int teleIN, int count=-1, int bins=4, TCutG *cut=NULL, int dimen=2 ,
   TH1* h2;
   //  TH2F* h2=(TH2F*)gDirectory->Get( telename );
   //  sleep(1);
-  h2=(TH1*)gDirectory->FindObject( spename ); 
+  h2=(TH1*)gDirectory->FindObject( spename );
   //  if ( dimen==2){  h2=(TH1*)gDirectory->FindObject( telename );  }
   //  if ( dimen==1){  h2=(TH1*)gDirectory->FindObject( telename );  }
 
@@ -598,7 +600,7 @@ void mkmat1(int tele=-1, const char* VOL="V" , const char* COND="", int count=-1
 /*
  *      2D  spectrum,  no cut,     6,"V"
  */
-void mkmat(int tele=-1,  const char* VOL ){
+void mkmat(int tele=-1,  const char* VOL="V" ){
   int dimension=2;
   int bins=4;
   mkmat(tele, -1, bins, NULL, dimension , VOL );  // DIM ==1
@@ -645,7 +647,7 @@ void batchmat(int run,  int  det=6, const char* VOL="V" ){
   // accept  both 003 or 0003......
   sprintf( fname, "RUN%03d_%s.root", run,  VOL );
   if (  FileExists( fname,1000 )  ){
-    printf("File %s exists\n", fname);   
+    printf("File %s exists\n", fname);
   }else{
     sprintf( fname, "RUN%04d_%s.root", run,  VOL );
   }
@@ -661,7 +663,7 @@ void batchmat(int run,  int  det=6, const char* VOL="V" ){
   sprintf( telenamep, "T%d_p_run%03d_%s", det, run, VOL );       //telename p
   sprintf( telenamede, "T%d_de_run%03d_%s", det, run, VOL );       //telename de
 
-  sprintf( cutdname, "cutt%dd%s", det, VOL );       //cutname d 
+  sprintf( cutdname, "cutt%dd%s", det, VOL );       //cutname d
   sprintf( cutpname, "cutt%dp%s", det, VOL );       //cutname p
 
 
@@ -717,7 +719,7 @@ void batchmat(int run,  int  det=6, const char* VOL="V" ){
 
 
   // SAVE .................................................
-  TDirectory *dir=gDirectory;  
+  TDirectory *dir=gDirectory;
   TFile *f2=new TFile( fnamespe ,"UPDATE");   //  save to ...fnamespe...Tispectra.root
     t6bi->SetName( namespe );
     t6bi->Write();
@@ -730,11 +732,11 @@ void batchmat(int run,  int  det=6, const char* VOL="V" ){
     printf("closing %s\n",  fnamespe );
   f2->Close();
   dir->cd();
-  
+
   //  t->Show(2);
     printf("closing %s\n",  fname );
     f->Close();
   }//FILE root DOES EXIST
-  
-    
+
+
 }//  batchmat
